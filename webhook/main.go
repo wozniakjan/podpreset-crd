@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -34,17 +33,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"k8s.io/apimachinery/pkg/runtime"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
 const (
 	annotationPrefix = "podpreset.admission.kubernetes.io"
 )
-
-var crdClient client.Client
 
 // Config contains the server (the webhook) cert and key.
 type Config struct {
@@ -363,8 +358,8 @@ func mutatePods(ar v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
 		}
 	}
 
-	list := &settingsapi.PodPresetList{}
-	err := crdClient.List(context.TODO(), &client.ListOptions{Namespace: pod.Namespace}, list)
+	podPresets, err := listPodPresetWithRetry(pod.Namespace)
+
 	if meta.IsNoMatchError(err) {
 		glog.Errorf("%v (has the CRD been loaded?)", err)
 		return toAdmissionResponse(err)
@@ -373,13 +368,13 @@ func mutatePods(ar v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
 		return toAdmissionResponse(err)
 	}
 
-	glog.Infof("fetched %d podpreset(s) in namespace %s", len(list.Items), pod.Namespace)
-	if len(list.Items) == 0 {
+	glog.Infof("fetched %d podpreset(s) in namespace %s", len(podPresets), pod.Namespace)
+	if len(podPresets) == 0 {
 		glog.V(5).Infof("No pod presets created, so skipping pod %v", pod.Name)
 		return &reviewResponse
 	}
 
-	matchingPPs, err := filterPodPresets(list.Items, &pod)
+	matchingPPs, err := filterPodPresets(podPresets, &pod)
 	if err != nil {
 		glog.Errorf("filtering pod presets failed: %v", err)
 		return toAdmissionResponse(err)
