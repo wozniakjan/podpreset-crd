@@ -61,6 +61,15 @@ type Etcd struct {
 // Start starts the etcd, waits for it to come up, and returns an error, if one
 // occoured.
 func (e *Etcd) Start() error {
+	if e.processState == nil {
+		if err := e.setProcessState(); err != nil {
+			return err
+		}
+	}
+	return e.processState.Start(e.Out, e.Err)
+}
+
+func (e *Etcd) setProcessState() error {
 	var err error
 
 	e.processState = &internal.ProcessState{}
@@ -88,11 +97,7 @@ func (e *Etcd) Start() error {
 	e.processState.Args, err = internal.RenderTemplates(
 		internal.DoEtcdArgDefaulting(e.Args), e,
 	)
-	if err != nil {
-		return err
-	}
-
-	return e.processState.Start(e.Out, e.Err)
+	return err
 }
 
 // Stop stops this process gracefully, waits for its termination, and cleans up
@@ -100,3 +105,10 @@ func (e *Etcd) Start() error {
 func (e *Etcd) Stop() error {
 	return e.processState.Stop()
 }
+
+// EtcdDefaultArgs exposes the default args for Etcd so that you
+// can use those to append your own additional arguments.
+//
+// The internal default arguments are explicitely copied here, we don't want to
+// allow users to change the internal ones.
+var EtcdDefaultArgs = append([]string{}, internal.EtcdDefaultArgs...)
