@@ -31,6 +31,13 @@ build-image-controller:
 push-image-controller:
 	docker tag $(APP_NAME)-controller $(IMG)-controller:$(TAG)
 	docker push $(IMG)-controller:$(TAG)
+ifeq ($(JOB_TYPE), postsubmit)
+	@echo "Sign image with Cosign"
+	cosign version
+	cosign sign -key ${KMS_KEY_URL} $(IMG)-controller:$(TAG)
+else
+	@echo "Image signing skipped"
+endif
 
 .PHONY: clean
 clean:
@@ -88,6 +95,13 @@ build-image-webhook:
 push-image-webhook:
 	docker tag $(APP_NAME)-webhook $(IMG)-webhook:$(TAG)
 	docker push $(IMG)-webhook:$(TAG)
+ifeq ($(JOB_TYPE), postsubmit)
+	@echo "Sign image with Cosign"
+	cosign version
+	cosign sign -key ${KMS_KEY_URL} $(IMG):$(TAG)
+else
+	@echo "Image signing skipped"
+endif
 
 #
 # CI targets
