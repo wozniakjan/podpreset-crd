@@ -98,7 +98,7 @@ push-image-webhook:
 ifeq ($(JOB_TYPE), postsubmit)
 	@echo "Sign image with Cosign"
 	cosign version
-	cosign sign -key ${KMS_KEY_URL} $(IMG):$(TAG)
+	cosign sign -key ${KMS_KEY_URL} $(IMG)-webhook:$(TAG)
 else
 	@echo "Image signing skipped"
 endif
