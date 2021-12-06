@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM golang:1.16.10 as builder
+FROM golang:1.17.4 as builder
 
 # Copy in the go src
 WORKDIR /go/src/github.com/jpeeler/podpreset-crd
